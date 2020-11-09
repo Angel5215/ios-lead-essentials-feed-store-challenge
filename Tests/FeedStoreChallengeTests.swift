@@ -23,12 +23,27 @@ class RealmFeedImage: Object {
     @objc dynamic var location: String? = nil
     @objc dynamic var url: String = ""
     
-    convenience init(from local: LocalFeedImage) {
+    convenience init(id: String, imageDescription: String?, location: String?, url: String) {
         self.init()
-        self.id = local.id.uuidString
-        self.imageDescription = local.description
-        self.location = local.location
-        self.url = local.url.absoluteString
+        self.id = id
+        self.imageDescription = imageDescription
+        self.location = location
+        self.url = url
+    }
+}
+
+class RealmFeedMapper {
+    static func transform(localFeedImage: [LocalFeedImage]) -> [RealmFeedImage] {
+        return localFeedImage.map {
+            RealmFeedImage(id: $0.id.uuidString, imageDescription: $0.description, location: $0.location, url: $0.url.absoluteString)
+        }
+    }
+    
+    static func transform(realmFeed: List<RealmFeedImage>) -> [LocalFeedImage] {
+        return realmFeed.compactMap {
+            guard let id = UUID(uuidString: $0.id), let url = URL(string: $0.url) else { return nil }
+            return LocalFeedImage(id: id, description: $0.imageDescription, location: $0.location, url: url)
+        }
     }
 }
 
@@ -52,10 +67,7 @@ class RealmFeedStore: FeedStore {
             return completion(.empty)
         }
         
-        let feed: [LocalFeedImage] = cache.imageList.compactMap {
-            guard let id = UUID(uuidString: $0.id), let url = URL(string: $0.url) else { return nil }
-            return LocalFeedImage(id: id, description: $0.imageDescription, location: $0.location, url: url)
-        }
+        let feed = RealmFeedMapper.transform(realmFeed: cache.imageList)
         let timestamp = cache.timestamp
         
         completion(.found(feed: feed, timestamp: timestamp))
@@ -63,7 +75,8 @@ class RealmFeedStore: FeedStore {
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         try! realm.write() {
-            let value = RealmCache(realmFeed: feed.map(RealmFeedImage.init), timestamp: timestamp)
+            let realmFeed = RealmFeedMapper.transform(localFeedImage: feed)
+            let value = RealmCache(realmFeed: realmFeed, timestamp: timestamp)
             realm.create(RealmCache.self, value: value)
             completion(nil)
         }
