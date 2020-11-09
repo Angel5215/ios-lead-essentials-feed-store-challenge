@@ -9,6 +9,12 @@ import RealmSwift
 class RealmCache: Object {
     let imageList = List<RealmFeedImage>()
     @objc dynamic var timestamp: Date = Date()
+    
+    convenience init(realmFeed: [RealmFeedImage], timestamp: Date) {
+        self.init()
+        self.imageList.append(objectsIn: realmFeed)
+        self.timestamp = timestamp
+    }
 }
 
 class RealmFeedImage: Object {
@@ -16,9 +22,7 @@ class RealmFeedImage: Object {
     @objc dynamic var imageDescription: String? = nil
     @objc dynamic var location: String? = nil
     @objc dynamic var url: String = ""
-}
-
-extension RealmFeedImage {
+    
     convenience init(from local: LocalFeedImage) {
         self.init()
         self.id = local.id.uuidString
@@ -59,11 +63,8 @@ class RealmFeedStore: FeedStore {
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         try! realm.write() {
-            let cache = realm.create(RealmCache.self, value: RealmCache())
-            let realmFeed = feed.map(RealmFeedImage.init)
-            
-            cache.imageList.append(objectsIn: realmFeed)
-            cache.timestamp = timestamp
+            let value = RealmCache(realmFeed: feed.map(RealmFeedImage.init), timestamp: timestamp)
+            realm.create(RealmCache.self, value: value)
             completion(nil)
         }
     }
