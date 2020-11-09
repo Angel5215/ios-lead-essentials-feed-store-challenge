@@ -6,7 +6,7 @@ import XCTest
 import FeedStoreChallenge
 import RealmSwift
 
-class Cache: Object {
+class RealmCache: Object {
     let imageList = List<RealmFeedImage>()
     @objc dynamic var timestamp: Date = Date()
 }
@@ -44,7 +44,7 @@ class RealmFeedStore: FeedStore {
     // MARK: - FeedStore
     
     func retrieve(completion: @escaping RetrievalCompletion) {
-        guard let cache = realm.objects(Cache.self).first else {
+        guard let cache = realm.objects(RealmCache.self).first else {
             return completion(.empty)
         }
         
@@ -59,7 +59,7 @@ class RealmFeedStore: FeedStore {
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         try! realm.write() {
-            let cache = realm.create(Cache.self, value: Cache())
+            let cache = realm.create(RealmCache.self, value: RealmCache())
             let realmFeed = feed.map(RealmFeedImage.init)
             
             cache.imageList.append(objectsIn: realmFeed)
