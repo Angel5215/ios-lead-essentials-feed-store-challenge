@@ -32,18 +32,20 @@ class RealmFeedImage: Object {
     }
 }
 
-class RealmFeedMapper {
-    static func transform(localFeedImage: [LocalFeedImage]) -> [RealmFeedImage] {
-        return localFeedImage.map {
+class RealmCacheMapper {
+    static func realmCache(for localFeedImage: [LocalFeedImage], timestamp: Date) -> RealmCache {
+        let realmFeed = localFeedImage.map {
             RealmFeedImage(id: $0.id.uuidString, imageDescription: $0.description, location: $0.location, url: $0.url.absoluteString)
         }
+        return RealmCache(realmFeed: realmFeed, timestamp: timestamp)
     }
     
-    static func transform(realmFeed: List<RealmFeedImage>) -> [LocalFeedImage] {
-        return realmFeed.compactMap {
+    static func transform(realmCache: RealmCache) -> (feed: [LocalFeedImage], timestamp: Date) {
+        let feed: [LocalFeedImage] = realmCache.imageList.compactMap {
             guard let id = UUID(uuidString: $0.id), let url = URL(string: $0.url) else { return nil }
             return LocalFeedImage(id: id, description: $0.imageDescription, location: $0.location, url: url)
         }
+        return (feed, realmCache.timestamp)
     }
 }
 
@@ -67,17 +69,14 @@ class RealmFeedStore: FeedStore {
             return completion(.empty)
         }
         
-        let feed = RealmFeedMapper.transform(realmFeed: cache.imageList)
-        let timestamp = cache.timestamp
-        
+        let (feed, timestamp) = RealmCacheMapper.transform(realmCache: cache)
         completion(.found(feed: feed, timestamp: timestamp))
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         try! realm.write() {
-            let realmFeed = RealmFeedMapper.transform(localFeedImage: feed)
-            let value = RealmCache(realmFeed: realmFeed, timestamp: timestamp)
-            realm.create(RealmCache.self, value: value)
+            let cache = RealmCacheMapper.realmCache(for: feed, timestamp: timestamp)
+            realm.create(RealmCache.self, value: cache)
             completion(nil)
         }
     }
