@@ -74,10 +74,14 @@ class RealmFeedStore: FeedStore {
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        try! realm.write() {
-            let cache = RealmCacheMapper.realmCache(for: feed, timestamp: timestamp)
-            realm.create(RealmCache.self, value: cache)
-            completion(nil)
+        do {
+            try realm.write() {
+                let cache = RealmCacheMapper.realmCache(for: feed, timestamp: timestamp)
+                realm.create(RealmCache.self, value: cache)
+                completion(nil)
+            }
+        } catch {
+            completion(error)
         }
     }
     
@@ -135,9 +139,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_insert_deliversNoErrorOnEmptyCache() {
-//		let sut = makeSUT()
-//
-//		assertThatInsertDeliversNoErrorOnEmptyCache(on: sut)
+		let sut = makeSUT()
+
+		assertThatInsertDeliversNoErrorOnEmptyCache(on: sut)
 	}
 
 	func test_insert_deliversNoErrorOnNonEmptyCache() {
