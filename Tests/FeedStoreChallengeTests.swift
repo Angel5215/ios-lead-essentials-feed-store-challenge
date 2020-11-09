@@ -4,14 +4,68 @@
 
 import XCTest
 import FeedStoreChallenge
+import RealmSwift
+
+class Cache: Object {
+    let imageList = List<RealmFeedImage>()
+    @objc dynamic var timestamp: Date = Date()
+}
+
+class RealmFeedImage: Object {
+    @objc dynamic var id: String = ""
+    @objc dynamic var imageDescription: String? = nil
+    @objc dynamic var location: String? = nil
+    @objc dynamic var url: String = ""
+}
+
+extension RealmFeedImage {
+    convenience init(from local: LocalFeedImage) {
+        self.init()
+        self.id = local.id.uuidString
+        self.imageDescription = local.description
+        self.location = local.location
+        self.url = local.url.absoluteString
+    }
+}
 
 class RealmFeedStore: FeedStore {
+    
+    typealias Configuration = Realm.Configuration
+    
+    // MARK: - Properties
+    private let realm: Realm
+    
+    // MARK: - Initializers
+    
+    init(configuration: Configuration) {
+        self.realm = try! Realm(configuration: configuration)
+    }
+    
+    // MARK: - FeedStore
+    
     func retrieve(completion: @escaping RetrievalCompletion) {
-        completion(.empty)
+        guard let cache = realm.objects(Cache.self).first else {
+            return completion(.empty)
+        }
+        
+        let feed: [LocalFeedImage] = cache.imageList.compactMap {
+            guard let id = UUID(uuidString: $0.id), let url = URL(string: $0.url) else { return nil }
+            return LocalFeedImage(id: id, description: $0.imageDescription, location: $0.location, url: url)
+        }
+        let timestamp = cache.timestamp
+        
+        completion(.found(feed: feed, timestamp: timestamp))
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        
+        try! realm.write() {
+            let cache = realm.create(Cache.self, value: Cache())
+            let realmFeed = feed.map(RealmFeedImage.init)
+            
+            cache.imageList.append(objectsIn: realmFeed)
+            cache.timestamp = timestamp
+            completion(nil)
+        }
     }
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
@@ -32,6 +86,16 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     //  Repeat this process until all tests are passing.
     //
     //  ***********************
+    
+    override func setUp() {
+        super.setUp()
+        try? FileManager.default.removeItem(at: testStoreURL())
+    }
+    
+    override func tearDown() {
+        super.tearDown()
+        try? FileManager.default.removeItem(at: testStoreURL())
+    }
 
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
@@ -46,9 +110,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_retrieve_deliversFoundValuesOnNonEmptyCache() {
-//		let sut = makeSUT()
-//
-//		assertThatRetrieveDeliversFoundValuesOnNonEmptyCache(on: sut)
+		let sut = makeSUT()
+
+		assertThatRetrieveDeliversFoundValuesOnNonEmptyCache(on: sut)
 	}
 
 	func test_retrieve_hasNoSideEffectsOnNonEmptyCache() {
@@ -107,10 +171,24 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	
 	// - MARK: Helpers
 	
-	private func makeSUT() -> FeedStore {
-        return RealmFeedStore()
+    private func makeSUT() -> FeedStore {
+        return RealmFeedStore(configuration: makeConfiguration())
 	}
+    
+    private func makeConfiguration() -> RealmFeedStore.Configuration {
+        var configuration = RealmFeedStore.Configuration()
+        configuration.fileURL = testStoreURL()
+        
+        return configuration
+    }
 	
+    private func cachesURL() -> URL {
+        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+    }
+    
+    private func testStoreURL() -> URL {
+        return cachesURL().appendingPathComponent("\(type(of: self))Tests").appendingPathExtension("realm")
+    }
 }
 
 //  ***********************
