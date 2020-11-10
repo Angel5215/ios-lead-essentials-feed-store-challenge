@@ -18,8 +18,8 @@ public class RealmFeedStore: FeedStore {
     
     // MARK: - Initializers
     
-    public init(configuration: Configuration) {
-        self.realm = try! Realm(configuration: configuration)
+    public init(configuration: Configuration) throws {
+        self.realm = try Realm(configuration: configuration)
     }
     
     // MARK: - FeedStore
