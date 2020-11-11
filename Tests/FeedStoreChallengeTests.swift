@@ -100,6 +100,11 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 
 		assertThatSideEffectsRunSerially(on: sut)
 	}
+    
+    func test_init_throwsErrorWithInvalidConfiguration() throws {
+        let configuration = makeConfiguration(url: cachesURL())
+        XCTAssertThrowsError(try RealmFeedStore(configuration: configuration))
+    }
 	
 	// - MARK: Helpers
 	
@@ -107,9 +112,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
         return try! RealmFeedStore(configuration: makeConfiguration())
 	}
     
-    private func makeConfiguration() -> RealmFeedStore.Configuration {
+    private func makeConfiguration(url: URL? = nil) -> RealmFeedStore.Configuration {
         var configuration = RealmFeedStore.Configuration()
-        configuration.fileURL = testStoreURL()
+        configuration.fileURL = url ?? testStoreURL()
         
         return configuration
     }
