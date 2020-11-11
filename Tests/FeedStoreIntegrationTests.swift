@@ -79,12 +79,16 @@ class FeedStoreIntegrationTests: XCTestCase {
         return try! RealmFeedStore(configuration: makeConfiguration())
     }
     
+    private func removeRealmFromDisk() {
+        try? FileManager.default.removeItem(at: testStoreURL())
+    }
+    
     private func setupEmptyStoreState() {
-
+        removeRealmFromDisk()
     }
 
     private func undoStoreSideEffects() {
-
+        removeRealmFromDisk()
     }
     
     private func makeConfiguration(url: URL? = nil) -> RealmFeedStore.Configuration {
