@@ -124,6 +124,6 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     }
     
     private func testStoreURL() -> URL {
-        return cachesURL().appendingPathComponent("\(type(of: self))Tests").appendingPathExtension("realm")
+        return cachesURL().appendingPathComponent("\(type(of: self))").appendingPathExtension("realm")
     }
 }
