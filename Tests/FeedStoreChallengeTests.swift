@@ -109,13 +109,19 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	// - MARK: Helpers
 	
     private func makeSUT() -> FeedStore {
-        return try! RealmFeedStore(configuration: makeConfiguration())
+        return try! RealmFeedStore(configuration: makeInMemoryConfiguration())
 	}
     
     private func makeConfiguration(url: URL? = nil) -> RealmFeedStore.Configuration {
         var configuration = RealmFeedStore.Configuration()
         configuration.fileURL = url ?? testStoreURL()
         
+        return configuration
+    }
+    
+    private func makeInMemoryConfiguration() -> RealmFeedStore.Configuration {
+        var configuration = RealmFeedStore.Configuration()
+        configuration.inMemoryIdentifier = "\(type(of: self))"
         return configuration
     }
 	
