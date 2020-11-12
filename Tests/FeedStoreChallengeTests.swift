@@ -19,16 +19,6 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     //
     //  ***********************
     
-    override func setUp() {
-        super.setUp()
-        try? FileManager.default.removeItem(at: testStoreURL())
-    }
-    
-    override func tearDown() {
-        super.tearDown()
-        try? FileManager.default.removeItem(at: testStoreURL())
-    }
-
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
 
@@ -102,8 +92,7 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
     
     func test_init_throwsErrorWithInvalidConfiguration() throws {
-        let configuration = makeConfiguration(url: invalidURL())
-        XCTAssertThrowsError(try RealmFeedStore(configuration: configuration))
+        XCTAssertThrowsError(try RealmFeedStore(configuration: invalidConfiguration()))
     }
 	
 	// - MARK: Helpers
@@ -112,10 +101,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
         return try! RealmFeedStore(configuration: makeInMemoryConfiguration())
 	}
     
-    private func makeConfiguration(url: URL? = nil) -> RealmFeedStore.Configuration {
+    private func invalidConfiguration() -> RealmFeedStore.Configuration {
         var configuration = RealmFeedStore.Configuration()
-        configuration.fileURL = url ?? testStoreURL()
-        
+        configuration.fileURL = invalidURL()
         return configuration
     }
     
@@ -125,15 +113,7 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
         return configuration
     }
 	
-    private func cachesURL() -> URL {
-        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-    }
-    
-    private func testStoreURL() -> URL {
-        return cachesURL().appendingPathComponent("\(type(of: self))").appendingPathExtension("realm")
-    }
-    
     private func invalidURL() -> URL {
-        return cachesURL()
+        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
     }
 }
