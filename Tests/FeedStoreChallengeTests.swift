@@ -102,7 +102,7 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
     
     func test_init_throwsErrorWithInvalidConfiguration() throws {
-        let configuration = makeConfiguration(url: cachesURL())
+        let configuration = makeConfiguration(url: invalidURL())
         XCTAssertThrowsError(try RealmFeedStore(configuration: configuration))
     }
 	
@@ -125,5 +125,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
     
     private func testStoreURL() -> URL {
         return cachesURL().appendingPathComponent("\(type(of: self))").appendingPathExtension("realm")
+    }
+    
+    private func invalidURL() -> URL {
+        return cachesURL()
     }
 }
